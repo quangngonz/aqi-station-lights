@@ -107,14 +107,26 @@ def cycle_relays(delay=0.5):
 
 def main():
     """Main application loop for AQI monitoring."""
+    # Initialize traffic light first
+    traffic_light = TrafficLight(RELAY_PINS[0], RELAY_PINS[1], RELAY_PINS[2])
+
     # Connect to Wi-Fi - keep trying until successful
     print("Connecting to Wi-Fi...")
     while not wifi.connect_wifi():
-        print("Failed to connect. Retrying in 5 seconds...")
-        time.sleep(5)
+        print("Failed to connect. Retrying...")
+        traffic_light.yellow()
+        time.sleep(0.5)
+        traffic_light.red()
+        time.sleep(0.5)
 
-    # Initialize traffic light
-    traffic_light = TrafficLight(RELAY_PINS[0], RELAY_PINS[1], RELAY_PINS[2])
+    # Flash green light to indicate successful connection
+    print("Wi-Fi connected.")
+    for _ in range(3):
+        traffic_light.green()
+        time.sleep(0.2)
+        traffic_light.off()
+        time.sleep(0.2)
+
     last_update = time.time() - UPDATE_INTERVAL
 
     print(f"Starting AQI monitoring (update interval: {UPDATE_INTERVAL}s)")

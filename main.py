@@ -3,9 +3,16 @@ import time
 import machine
 import requests
 import wifi
+import _thread
+import socket
 
 # TODO: Update config_example.py with new AQI thresholds and URL and rename to config.py
-from config import AQI_GOOD_MAX, AQI_CAUTION_MAX, UPDATE_INTERVAL, STATION_URL
+from config import AQI_GOOD_MAX, AQI_CAUTION_MAX, UPDATE_INTERVAL, STATION_URL, WEB_SERVER_PORT
+
+# Global state for caching and control
+last_aqi = None
+last_successful_fetch = None
+restart_requested = False
 
 # GPIO pin configuration for relays
 RELAY_PINS = [4, 3, 2]  # [Red, Yellow, Green]
@@ -47,16 +54,30 @@ class TrafficLight:
 
 def fetch_hanoi_aqi():
     """Fetch current AQI data for Hanoi."""
+    global last_aqi, last_successful_fetch
+
     print("Fetching Hanoi AQI data...")
     try:
         response = requests.get(STATION_URL, timeout=10)
         data = response.json()
         aqi = data.get('current', {}).get('aqius')
-        print(f"AQI data received: {aqi}")
-        return aqi
+
+        if aqi is not None:
+            print(f"AQI data received: {aqi}")
+            # Cache successful response
+            last_aqi = aqi
+            last_successful_fetch = time.time()
+            return aqi
+        else:
+            print("AQI data incomplete, using cached value")
+            return last_aqi
+
     except Exception as e:
         print(f"AQI fetch error: {e}")
-        return None
+        if last_aqi is not None:
+            age = time.time() - last_successful_fetch if last_successful_fetch else 0
+            print(f"Using cached AQI: {last_aqi} (age: {age:.0f}s)")
+        return last_aqi
 
 
 def set_traffic_light_by_aqi(aqi, traffic_light):
@@ -76,6 +97,67 @@ def set_traffic_light_by_aqi(aqi, traffic_light):
     else:
         print("AQI Level: UNHEALTHY (Red)")
         traffic_light.red()
+
+
+def web_server(traffic_light):
+    """Simple web server for remote control and status."""
+    global restart_requested, last_aqi, last_successful_fetch
+
+    addr = socket.getaddrinfo('0.0.0.0', WEB_SERVER_PORT)[0][-1]
+    s = socket.socket()
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind(addr)
+    s.listen(1)
+    print(f"Web server listening on port {WEB_SERVER_PORT}")
+
+    while True:
+        try:
+            cl, addr = s.accept()
+            print(f"Client connected from {addr}")
+
+            request = cl.recv(1024).decode('utf-8')
+
+            if 'GET /restart' in request:
+                response = "HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n"
+                response += "<html><body><h1>Restarting device...</h1></body></html>"
+                cl.send(response.encode())
+                cl.close()
+                print("Restart requested via web")
+                restart_requested = True
+                time.sleep(1)
+                machine.reset()
+
+            elif 'GET /status' in request:
+                age = time.time() - last_successful_fetch if last_successful_fetch else 0
+                uptime = time.time()
+                status = f"""HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n
+<html><body>
+<h1>Pico W AQI Monitor Status</h1>
+<p><b>Current AQI:</b> {last_aqi if last_aqi else 'No data yet'}</p>
+<p><b>Last Update:</b> {age:.0f} seconds ago</p>
+<p><b>Uptime:</b> {uptime:.0f} seconds</p>
+<p><a href='/restart'>Restart Device</a></p>
+</body></html>"""
+                cl.send(status.encode())
+                cl.close()
+
+            else:
+                # Default page
+                response = """HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n
+<html><body>
+<h1>Pico W AQI Monitor</h1>
+<p><a href='/status'>View Status</a></p>
+<p><a href='/restart'>Restart Device</a></p>
+</body></html>"""
+                cl.send(response.encode())
+                cl.close()
+
+        except Exception as e:
+            print(f"Web server error: {e}")
+            try:
+                cl.close()
+            except:
+                pass
 
 
 def cycle_relays(delay=0.5):
@@ -107,6 +189,11 @@ def cycle_relays(delay=0.5):
 
 def main():
     """Main application loop for AQI monitoring."""
+    global restart_requested
+
+    # Setup watchdog timer (8 seconds)
+    wdt = machine.WDT(timeout=8000)
+
     # Initialize traffic light first
     traffic_light = TrafficLight(RELAY_PINS[0], RELAY_PINS[1], RELAY_PINS[2])
 
@@ -118,6 +205,7 @@ def main():
         time.sleep(0.5)
         traffic_light.red()
         time.sleep(0.5)
+        wdt.feed()  # Feed watchdog during connection attempts
 
     # Flash green light to indicate successful connection
     print("Wi-Fi connected.")
@@ -127,12 +215,26 @@ def main():
         traffic_light.off()
         time.sleep(0.2)
 
+    # Start web server in separate thread
+    try:
+        _thread.start_new_thread(web_server, (traffic_light,))
+        print("Web server started in background")
+    except Exception as e:
+        print(f"Failed to start web server: {e}")
+
     last_update = time.time() - UPDATE_INTERVAL
 
     print(f"Starting AQI monitoring (update interval: {UPDATE_INTERVAL}s)")
 
     try:
         while True:
+            # Feed watchdog to prevent reset
+            wdt.feed()
+
+            if restart_requested:
+                print("Restart requested, rebooting...")
+                machine.reset()
+
             current_time = time.time()
 
             if current_time - last_update >= UPDATE_INTERVAL:
@@ -147,6 +249,9 @@ def main():
         print("\nShutting down...")
     except Exception as e:
         print(f"An error occurred: {e}")
+        print("Restarting in 5 seconds...")
+        time.sleep(5)
+        machine.reset()
     finally:
         traffic_light.off()
         print("Traffic light turned off.")

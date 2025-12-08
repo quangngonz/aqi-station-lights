@@ -12,3 +12,9 @@ STATION_URL = "Replace_with_your_AQI_station_URL"
 
 # Web server configuration
 WEB_SERVER_PORT = 80  # Port for remote control web interface
+
+# Remote control backend configuration
+ENABLE_REMOTE_CONTROL = False  # Set to True to enable cloud control
+BACKEND_URL = "https://your-username.pythonanywhere.com"  # Your deployed backend URL
+BACKEND_TOKEN = "your-secret-token-change-me"  # Must match backend SECRET_TOKEN
+BACKEND_POLL_INTERVAL = 30  # Poll backend every 30 seconds

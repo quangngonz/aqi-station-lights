@@ -11,6 +11,7 @@ This project fetches real-time AQI data from monitoring stations and displays ai
 - 🔴 **Red Light**: Unhealthy air quality (AQI > 150) - Stay indoors
 
 The traffic lights also provide **WiFi connection status feedback**:
+
 - 🟡🔴 **Flashing Yellow/Red**: Attempting to connect to WiFi
 - 🟢 **Flashing Green (3x)**: Successfully connected to WiFi
 
@@ -26,13 +27,13 @@ The system is designed to help schools and institutions make informed decisions 
 
 ## 📋 Wiring Diagram
 
-| Pico Pin | Component | Description |
-|----------|-----------|-------------|
-| GPIO 4   | Relay 1   | Red Light   |
-| GPIO 3   | Relay 2   | Yellow Light|
-| GPIO 2   | Relay 3   | Green Light |
-| GND      | Relay GND | Ground      |
-| 3V3/VBUS | Relay VCC | Power (check your relay voltage)|
+| Pico Pin | Component | Description                      |
+| -------- | --------- | -------------------------------- |
+| GPIO 4   | Relay 1   | Red Light                        |
+| GPIO 3   | Relay 2   | Yellow Light                     |
+| GPIO 2   | Relay 3   | Green Light                      |
+| GND      | Relay GND | Ground                           |
+| 3V3/VBUS | Relay VCC | Power (check your relay voltage) |
 
 ## 🚀 Getting Started
 
@@ -50,18 +51,19 @@ The system is designed to help schools and institutions make informed decisions 
    cp config_example.py config.py
    ```
 3. Edit `config.py` with your settings:
+
    ```python
    # WiFi credentials
    SSID = "Your_WiFi_SSID"
    PASSWORD = "Your_WiFi_Password"
-   
+
    # AQI thresholds (adjust based on your needs)
    AQI_GOOD_MAX = 50         # Good to play outside
    AQI_CAUTION_MAX = 150     # Outside with caution
-   
+
    # Update interval (in seconds)
    UPDATE_INTERVAL = 60 * 5  # Update every 5 minutes
-   
+
    # AQI data source URL (e.g., IQAir API endpoint)
    STATION_URL = "Your_AQI_station_URL"
    ```
@@ -71,7 +73,7 @@ The system is designed to help schools and institutions make informed decisions 
 Upload the following files to your Pico using a tool like [Thonny](https://thonny.org/) or [rshell](https://github.com/dhylands/rshell):
 
 - `main.py` - Main application logic
-- `wifi.py` - WiFi connection handler  
+- `wifi.py` - WiFi connection handler
 - `config.py` - Your configuration file
 
 ### 4. Run the Application
@@ -88,6 +90,7 @@ main.main()
 This project supports any AQI data source that provides JSON responses with AQI values. Popular options include:
 
 ### IQAir API
+
 1. Register for a free API key at [IQAir](https://www.iqair.com/air-pollution-data-api)
 2. Use the endpoint format:
    ```
@@ -96,7 +99,9 @@ This project supports any AQI data source that provides JSON responses with AQI 
 3. Update `STATION_URL` in `config.py`
 
 ### Custom API
+
 The code expects a JSON response with the following structure:
+
 ```json
 {
   "current": {
@@ -156,20 +161,62 @@ If you need to use different GPIO pins, update the `RELAY_PINS` list in `main.py
 RELAY_PINS = [4, 3, 2]  # [Red, Yellow, Green]
 ```
 
+## 🌐 Remote Control (NEW!)
+
+Control your Pico W device from anywhere on the internet! The system now includes a cloud backend that allows you to:
+
+- **Trigger AQI refresh** remotely (no waiting for the next update)
+- **Restart the device** from anywhere
+- **Monitor device status** and view current AQI
+
+### Quick Start
+
+1. **Deploy the backend** (free hosting on PythonAnywhere):
+
+   ```bash
+   # See REMOTE_CONTROL_GUIDE.md for detailed instructions
+   ```
+
+2. **Enable remote control** in `config.py`:
+
+   ```python
+   ENABLE_REMOTE_CONTROL = True
+   BACKEND_URL = "https://yourusername.pythonanywhere.com"
+   BACKEND_TOKEN = "your-secret-token"
+   ```
+
+3. **Control from anywhere**:
+
+   ```bash
+   # Trigger AQI refresh
+   python control_pico.py refresh
+
+   # Check device status
+   python control_pico.py status
+   ```
+
+**📖 For complete setup and deployment instructions, see [REMOTE_CONTROL_GUIDE.md](REMOTE_CONTROL_GUIDE.md)**
+
 ## 📁 Project Structure
 
 ```
 aqi-lights/
-├── main.py              # Main application logic
-├── wifi.py              # WiFi connection handler
-├── config.py            # Configuration file (gitignored)
-├── config_example.py    # Configuration template
-└── README.md            # This file
+├── main.py                    # Main application logic
+├── wifi.py                    # WiFi connection handler
+├── remote_control.py          # Remote control integration (NEW!)
+├── config.py                  # Configuration file (gitignored)
+├── config_example.py          # Configuration template
+├── backend.py                 # Flask backend server (NEW!)
+├── control_pico.py            # CLI control script (NEW!)
+├── requirements.txt           # Backend dependencies (NEW!)
+├── REMOTE_CONTROL_GUIDE.md    # Remote control setup guide (NEW!)
+└── README.md                  # This file
 ```
 
 ## 🐛 Troubleshooting
 
 ### WiFi Connection Issues
+
 - **Symptom**: Yellow and Red lights keep flashing indefinitely
 - **Solutions**:
   - Verify SSID and password in `config.py`
@@ -178,17 +225,20 @@ aqi-lights/
   - Check serial output for specific error messages
 
 ### Relays Not Switching
+
 - Verify wiring connections
 - Check if your relay module requires 5V (use VBUS pin instead of 3V3)
 - Run `cycle_relays()` to test relay functionality
 
 ### AQI Data Not Updating
+
 - Verify `STATION_URL` is correct and accessible
 - Check API key validity (if using IQAir or similar)
 - Monitor serial output for error messages
 - Ensure internet connectivity
 
 ### Lights Stay Off
+
 - Check that AQI data is being fetched successfully (monitor serial output)
 - Verify relay connections and power supply
 - Test relays using `cycle_relays()` function
@@ -200,6 +250,7 @@ This project is open source and available for educational and non-commercial use
 ## 🤝 Contributing
 
 Contributions are welcome! Feel free to:
+
 - Report bugs
 - Suggest new features
 - Submit pull requests

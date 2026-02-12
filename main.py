@@ -68,16 +68,21 @@ def fetch_hanoi_aqi():
         response = requests.get(STATION_URL, timeout=30)
         response.raise_for_status() # Raise HTTPError for bad responses (4xx, 5xx)
         data = response.json()
-        
-        # WAQI API structure check
-        if data.get('status') != 'ok':
-            logging.error(f"API returned status: {data.get('status')}")
-            return None
 
-        aqi = data.get('data', {}).get('aqi') # Standard WAQI structure: data -> aqi
+        print(data)
         
-        # Fallback for the Structure in original code if using a different API wrapper
+        aqi = None
+
+        # Check for standard WAQI structure with 'status'
+        if 'status' in data:
+            if data.get('status') != 'ok':
+                logging.error(f"API returned status: {data.get('status')}")
+                return None
+            aqi = data.get('data', {}).get('aqi')
+        
+        # Fallback or alternative structure (e.g. IQAir direct or similar)
         if aqi is None:
+             # Try 'current' -> 'aqius' (User provided structure)
              aqi = data.get('current', {}).get('aqius')
 
         logging.info(f"AQI data received: {aqi}")

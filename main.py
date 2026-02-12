@@ -68,8 +68,6 @@ def fetch_hanoi_aqi():
         response = requests.get(STATION_URL, timeout=30)
         response.raise_for_status() # Raise HTTPError for bad responses (4xx, 5xx)
         data = response.json()
-
-        print(data)
         
         aqi = None
 

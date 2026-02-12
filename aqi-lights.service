@@ -1,0 +1,16 @@
+[Unit]
+Description=AQI Traffic Lights Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/aqi-lights
+ExecStart=/home/pi/aqi-lights/venv/bin/python3 /home/pi/aqi-lights/main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

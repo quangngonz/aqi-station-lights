@@ -1,6 +1,3 @@
-SSID = "Replace_with_your_SSID"
-PASSWORD = "Replace_with_your_PASSWORD"
-
 # AQI thresholds for traffic light levels
 # Adjust these values as needed
 AQI_GOOD_MAX = 50         # Good to play outside

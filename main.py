@@ -11,17 +11,18 @@ except ImportError:
     # Default fallback values if config is missing
     AQI_GOOD_MAX = 50
     AQI_CAUTION_MAX = 100
-    UPDATE_INTERVAL = 900 # 15 minutes
+    UPDATE_INTERVAL = 900  # 15 minutes
     STATION_URL = "https://api.waqi.info/feed/hanoi/?token=YOUR_TOKEN_HERE"
 
 # GPIO pin configuration for relays (BCM numbering)
 # Adjust these pins if you wired them differently on the Pi Zero 2W
-RED_PIN = 15
-YELLOW_PIN = 13
-GREEN_PIN = 11
+RED_PIN = 22
+YELLOW_PIN = 27
+GREEN_PIN = 17
 
 # Logging setup
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class TrafficLight:
@@ -66,9 +67,9 @@ def fetch_hanoi_aqi():
     logging.info("Fetching Hanoi AQI data...")
     try:
         response = requests.get(STATION_URL, timeout=30)
-        response.raise_for_status() # Raise HTTPError for bad responses (4xx, 5xx)
+        response.raise_for_status()  # Raise HTTPError for bad responses (4xx, 5xx)
         data = response.json()
-        
+
         aqi = None
 
         # Check for standard WAQI structure with 'status'
@@ -77,11 +78,11 @@ def fetch_hanoi_aqi():
                 logging.error(f"API returned status: {data.get('status')}")
                 return None
             aqi = data.get('data', {}).get('aqi')
-        
+
         # Fallback or alternative structure (e.g. IQAir direct or similar)
         if aqi is None:
-             # Try 'current' -> 'aqius' (User provided structure)
-             aqi = data.get('current', {}).get('aqius')
+            # Try 'current' -> 'aqius' (User provided structure)
+            aqi = data.get('current', {}).get('aqius')
 
         logging.info(f"AQI data received: {aqi}")
         return aqi
@@ -100,7 +101,7 @@ def set_traffic_light_by_aqi(aqi, traffic_light):
         return
 
     logging.info(f"Current AQI: {aqi}")
-    
+
     # Ensure aqi is an integer/float
     try:
         aqi_val = float(aqi)
@@ -157,13 +158,14 @@ def main():
         traffic_light.off()
         time.sleep(0.2)
 
-    logging.info(f"Starting AQI monitoring (update interval: {UPDATE_INTERVAL}s)")
+    logging.info(
+        f"Starting AQI monitoring (update interval: {UPDATE_INTERVAL}s)")
 
     while True:
         try:
             aqi = fetch_hanoi_aqi()
-            
-            # If fetch fails (aqi is None), set_traffic_light_by_aqi handles it 
+
+            # If fetch fails (aqi is None), set_traffic_light_by_aqi handles it
             # by doing nothing (preserving state), which meets the requirement:
             # "if you can't fetch just keep the current light on alwaysss keep 1 light on (the latest one)"
             set_traffic_light_by_aqi(aqi, traffic_light)
@@ -178,7 +180,7 @@ def main():
         except Exception as e:
             logging.error(f"An unexpected error occurred in main loop: {e}")
             # Wait a bit before retrying to avoid spamming if there's a persistent error
-            time.sleep(60) 
+            time.sleep(60)
 
 
 if __name__ == "__main__":

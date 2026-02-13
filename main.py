@@ -16,9 +16,9 @@ except ImportError:
 
 # GPIO pin configuration for relays (BCM numbering)
 # Adjust these pins if you wired them differently on the Pi Zero 2W
-RED_PIN = 4
-YELLOW_PIN = 3
-GREEN_PIN = 2
+RED_PIN = 15
+YELLOW_PIN = 13
+GREEN_PIN = 11
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

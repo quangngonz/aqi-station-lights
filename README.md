@@ -1,6 +1,6 @@
 # AQI Traffic Light System
 
-A Raspberry Pi Pico 2W-based air quality indicator that displays real-time Air Quality Index (AQI) data using a traffic light system. Perfect for schools, offices, and public spaces to provide instant visual feedback about outdoor air quality conditions.
+A Raspberry Pi Zero 2W-based air quality indicator that displays real-time Air Quality Index (AQI) data using a traffic light system. Perfect for schools, offices, and public spaces to provide instant visual feedback about outdoor air quality conditions.
 
 ## 🚦 Overview
 
@@ -11,6 +11,7 @@ This project fetches real-time AQI data from monitoring stations and displays ai
 - 🔴 **Red Light**: Unhealthy air quality (AQI > 150) - Stay indoors
 
 The traffic lights also provide **WiFi connection status feedback**:
+
 - 🟡🔴 **Flashing Yellow/Red**: Attempting to connect to WiFi
 - 🟢 **Flashing Green (3x)**: Successfully connected to WiFi
 
@@ -27,13 +28,13 @@ The system is designed to help schools and institutions make informed decisions 
 
 ## 📋 Wiring Diagram
 
-| Pico Pin | Component | Description |
-|----------|-----------|-------------|
-| GPIO 4   | Relay 1   | Red Light   |
-| GPIO 3   | Relay 2   | Yellow Light|
-| GPIO 2   | Relay 3   | Green Light |
-| GND      | Relay GND | Ground      |
-| 3V3/VBUS | Relay VCC | Power (check your relay voltage)|
+| BCM GPIO | Component | Description                      |
+| -------- | --------- | -------------------------------- |
+| GPIO 22  | Relay 1   | Red Light                        |
+| GPIO 27  | Relay 2   | Yellow Light                     |
+| GPIO 17  | Relay 3   | Green Light                      |
+| GND      | Relay GND | Ground                           |
+| 5V/3V3   | Relay VCC | Power (check your relay voltage) |
 
 ## 🚀 Getting Started
 
@@ -45,6 +46,7 @@ The system is designed to help schools and institutions make informed decisions 
 ### 2. Installation
 
 1.  **Clone the Repository**
+
     ```bash
     git clone <your-repo-url>
     cd aqi-lights
@@ -53,6 +55,7 @@ The system is designed to help schools and institutions make informed decisions 
 
 2.  **Run Setup Script**
     This script installs dependencies, creates a virtual environment, and sets up the systemd service.
+
     ```bash
     chmod +x setup.sh
     ./setup.sh
@@ -60,10 +63,12 @@ The system is designed to help schools and institutions make informed decisions 
 
 3.  **Configure Config File**
     Edit `config.py` with your specific AQI Station URL and thresholds.
+
     ```bash
     nano config.py
     ```
-    *Note: Wi-Fi credentials are NOT required in `config.py` as networking is handled by the OS.*
+
+    _Note: Wi-Fi credentials are NOT required in `config.py` as networking is handled by the OS._
 
 4.  **Restart Service**
     After editing the config, restart the service to apply changes.
@@ -74,12 +79,15 @@ The system is designed to help schools and institutions make informed decisions 
 ### 3. Verification
 
 1.  **Check Service Status**
+
     ```bash
     sudo systemctl status aqi-lights
     ```
+
     You should see `Active: active (running)`.
 
 2.  **View Logs**
+
     ```bash
     journalctl -u aqi-lights -f
     ```
@@ -92,6 +100,7 @@ The system is designed to help schools and institutions make informed decisions 
 This project supports any AQI data source that provides JSON responses with AQI values. Popular options include:
 
 ### IQAir API
+
 1. Register for a free API key at [IQAir](https://www.iqair.com/air-pollution-data-api)
 2. Use the endpoint format:
    ```
@@ -100,7 +109,9 @@ This project supports any AQI data source that provides JSON responses with AQI 
 3. Update `STATION_URL` in `config.py`
 
 ### Custom API
+
 The code expects a JSON response with the following structure:
+
 ```json
 {
   "current": {
@@ -150,10 +161,12 @@ UPDATE_INTERVAL = 60 * 10  # Update every 10 minutes
 
 ### Modifying GPIO Pins
 
-If you need to use different GPIO pins, update the `RELAY_PINS` list in `main.py`:
+If you need to use different GPIO pins, update the BCM pin constants in `main.py`:
 
 ```python
-RELAY_PINS = [4, 3, 2]  # [Red, Yellow, Green]
+RED_PIN = 22
+YELLOW_PIN = 27
+GREEN_PIN = 17
 ```
 
 ## 📁 Project Structure
@@ -172,22 +185,26 @@ aqi-lights/
 ## 🐛 Troubleshooting
 
 ### Service Not Starting
+
 - Check status: `sudo systemctl status aqi-lights`
 - Check logs: `journalctl -u aqi-lights -f`
 - Ensure `config.py` exists and has valid values.
 - Verify `setup.sh` ran successfully.
 
 ### Relays Not Switching
-- Verify wiring connections (GPIO 4, 3, 2).
+
+- Verify wiring connections (BCM GPIO 22, 27, 17).
 - Check if your relay module requires 5V.
 - Test relays manually using python to toggle GPIOs.
 
 ### AQI Data Not Updating
+
 - Verify `STATION_URL` is correct and accessible.
 - Check logs for "AQI fetch error".
 - Ensure internet connectivity (`ping google.com`).
 
 ### Lights Stay Off
+
 - Check that AQI data is being fetched successfully (monitor serial output)
 - Verify relay connections and power supply
 - Test relays using `cycle_relays()` function
@@ -199,6 +216,7 @@ This project is open source and available for educational and non-commercial use
 ## 🤝 Contributing
 
 Contributions are welcome! Feel free to:
+
 - Report bugs
 - Suggest new features
 - Submit pull requests
